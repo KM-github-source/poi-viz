@@ -712,17 +712,27 @@
       + '</div>';
   }
 
+  function resolveImgUrl(item) {
+    // item 可能是字符串，也可能是 {origin_img_url, tos_img_url} 的 dict
+    if (!item) return '';
+    if (typeof item === 'string') return item;
+    // dict: 优先 origin_img_url，为空时 fallback 到 tos_img_url
+    return (item.origin_img_url && item.origin_img_url.trim()) ? item.origin_img_url : (item.tos_img_url || '');
+  }
+
   function renderGallery(urls, opts) {
     opts = opts || {};
     if (!urls || !urls.length) return '<div class="no-imgs">无图片</div>';
     const cls = opts.wide ? 'gallery wide' : 'gallery';
-    return '<div class="' + cls + '">' + urls.map((u, i) => {
+    return '<div class="' + cls + '">' + urls.map((item, i) => {
+      const u = resolveImgUrl(item);
+      if (!u) return '';
       const key = opts.key ? ' key' : '';
       return '<div class="thumb' + key + '" onclick="openLightbox(this)" data-url="' + escapeHtml(u) + '">'
            + '<span class="idx">' + (i + 1) + '</span>'
            + '<img loading="lazy" data-src="' + escapeHtml(u) + '" alt="" onerror="handleImgError(this)" />'
            + '</div>';
-    }).join('') + '</div>';
+    }).filter(Boolean).join('') + '</div>';
   }
 
   function googleCard(g) {
