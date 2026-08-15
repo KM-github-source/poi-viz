@@ -458,22 +458,32 @@
 (function () {
   'use strict';
 
-  // ---------------- Load data from TOS ----------------
+  // ---------------- Load data from GitHub Pages ----------------
   window.DATA = {};
   window.ALL_IDS = [];
+  const DATA_URL = 'https://km-github-source.github.io/poi-viz/data.json.gz';
+
+  async function parseGzipJsonResponse(res) {
+    if (!res.ok) throw new Error('HTTP status ' + res.status);
+    if (!res.body) throw new Error('浏览器不支持流式读取响应体');
+    if (typeof DecompressionStream !== 'function') {
+      throw new Error('当前浏览器不支持 gzip 解压，请使用较新的 Chrome / Edge / Safari');
+    }
+    const decompressedStream = res.body.pipeThrough(new DecompressionStream('gzip'));
+    const text = await new Response(decompressedStream).text();
+    return JSON.parse(text);
+  }
   
   async function loadData() {
     const loadingEl = document.createElement('div');
     loadingEl.className = 'loading';
-    loadingEl.innerHTML = '<div class="spinner"></div><div>正在从 TOS 拉取数据 (136MB，可能需要几秒钟)...</div>';
+    loadingEl.innerHTML = '<div class="spinner"></div><div>正在从 GitHub Pages 拉取压缩数据 (约 34MB，可能需要几秒钟)...</div>';
     document.getElementById('result').innerHTML = '';
     document.getElementById('result').appendChild(loadingEl);
     
     try {
-        const res = await fetch('https://poi-viz-data.tos-cn-shanghai.volces.com/data.json');
-        if (!res.ok) throw new Error('HTTP status ' + res.status);
-        
-        window.DATA = await res.json();
+        const res = await fetch(DATA_URL, { cache: 'no-store' });
+        window.DATA = await parseGzipJsonResponse(res);
         window.ALL_IDS = Object.keys(window.DATA);
         window.ALL_IDS.sort();
         
